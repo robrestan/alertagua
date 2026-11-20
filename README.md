@@ -2,6 +2,8 @@
 
 [Demo interactiva](https://robrestan.github.io/alertagua/)
 
+[Video de funcionamiento](https://raw.githubusercontent.com/robrestan/alertagua/main/demostracion.mp4)
+
 Sistema IoT de monitoreo y alerta temprana para parámetros de calidad del agua
 
 AlertAgua mide turbidez relativa, sólidos disueltos totales (TDS) y temperatura mediante sensores conectados a un microcontrolador ESP32. Registra las mediciones con fecha y hora en una tarjeta microSD y ofrece una interfaz web local, accesible sin conexión a internet. Cuando una medición supera alguno de los umbrales configurados, el sistema muestra una alerta en la interfaz y activa una señal sonora.
