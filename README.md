@@ -45,6 +45,8 @@ El proyecto facilita el seguimiento preventivo y la detección de variaciones en
 | microSD | MISO | 19 |
 | microSD | MOSI | 23 |
 
+<img width="550" height="500" alt="esquema de conexion" src="https://github.com/user-attachments/assets/63658ea1-9f64-4ff0-b008-47a80fd8cee4" />
+
 ## Requisitos de software
 
 - Arduino IDE
