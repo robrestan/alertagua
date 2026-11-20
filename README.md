@@ -2,7 +2,7 @@
 
 [Demo interactiva](https://robrestan.github.io/alertagua/)
 
-[Video de funcionamiento](https://raw.githubusercontent.com/robrestan/alertagua/main/demostracion.mp4)
+[Video de funcionamiento](https://youtu.be/C3o4H2P_-ys)
 
 Sistema IoT de monitoreo y alerta temprana para parámetros de calidad del agua
 
