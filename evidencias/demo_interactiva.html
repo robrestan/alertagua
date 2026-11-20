@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AlertAgua - Demo interactiva</title>
+  <style>
+    :root {
+      --azul: #075985;
+      --oscuro: #0c3048;
+      --fondo: #eef6f8;
+      --texto: #183243;
+      --borde: #d8e7ec;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+    }
+
+    header {
+      padding: 24px 20px;
+      color: white;
+      background: linear-gradient(120deg, var(--oscuro), var(--azul));
+    }
+
+    .contenedor, main {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    main { padding: 0 14px; }
+
+    h1 { margin: 0; font-size: 25px; }
+    h2 { margin: 0 0 14px; color: var(--oscuro); font-size: 18px; }
+    .subtitulo { margin: 7px 0 0; color: #d8f3f5; }
+
+    .card {
+      margin: 12px 0;
+      padding: 16px;
+      background: white;
+      border: 1px solid var(--borde);
+      border-radius: 12px;
+      box-shadow: 0 3px 12px #0c30480d;
+    }
+
+    .estado { line-height: 1.7; white-space: pre-line; }
+    .estado-titulo { margin-bottom: 8px; color: var(--oscuro); font-weight: bold; }
+
+    .alerta {
+      margin-bottom: 14px;
+      padding: 14px 16px;
+      border: 1px solid;
+      border-radius: 9px;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    .normal { color: #14532d; background: #f0fdf4; border-color: #22c55e; }
+    .roja { color: #991b1b; background: #fef2f2; border-color: #dc2626; }
+    .neutra { color: #334155; background: #f1f5f9; border-color: #94a3b8; }
+
+    .mediciones {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+    }
+
+    .medicion {
+      padding: 14px;
+      background: white;
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+    }
+
+    .medicion.superado { background: #fee2e2; border-color: #dc2626; }
+    .nombre, .limite, .nota, footer { color: #58717e; }
+    .nombre { font-size: 14px; }
+    .valor { margin-top: 6px; color: var(--azul); font-size: 25px; font-weight: bold; }
+    .superado .valor { color: #991b1b; }
+    .limite { margin-top: 6px; font-size: 12px; }
+
+    canvas { display: block; width: 100%; height: 260px; }
+
+    input, button, .boton {
+      margin: 4px;
+      padding: 10px;
+      border-radius: 7px;
+    }
+
+    input { border: 1px solid #b8cbd3; }
+
+    button, .boton {
+      display: inline-block;
+      padding: 10px 14px;
+      color: white;
+      background: var(--azul);
+      border: 0;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover, .boton:hover { background: var(--oscuro); }
+    .boton-secundario { background: #526b78; }
+    .nota, footer { font-size: 13px; }
+    footer { padding: 18px; text-align: center; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="contenedor">
+      <h1>AlertAgua</h1>
+      <p class="subtitulo">
+        Sistema de monitoreo y alerta temprana para tanques de almacenamiento de agua
+        <br>Demostración con datos simulados
+      </p>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="estado-titulo">Estado del dispositivo</div>
+      <div id="alerta" class="alerta neutra" role="status" aria-live="polite">
+        Cargando demostración...
+      </div>
+      <div id="estado" class="estado"></div>
+    </section>
+
+    <section class="card">
+      <h2>Mediciones actuales</h2>
+      <div class="mediciones">
+        <div class="medicion" id="tarjeta-temp">
+          <div class="nombre">Temperatura</div>
+          <div class="valor" id="valor-temp">—</div>
+          <div class="limite">Umbral máximo: 30.0 °C</div>
+        </div>
+        <div class="medicion" id="tarjeta-tds">
+          <div class="nombre">Sólidos disueltos (TDS)</div>
+          <div class="valor" id="valor-tds">—</div>
+          <div class="limite">Umbral máximo: 500.0 ppm</div>
+        </div>
+        <div class="medicion" id="tarjeta-turbidez">
+          <div class="nombre">Turbidez relativa</div>
+          <div class="valor" id="valor-turbidez">—</div>
+          <div class="limite">Umbral máximo: 50.0 %</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Historial de temperatura (°C)</h2>
+      <canvas id="grafica-temp" aria-label="Gráfica de temperatura"></canvas>
+    </section>
+
+    <section class="card">
+      <h2>Historial de sólidos disueltos (ppm)</h2>
+      <canvas id="grafica-tds" aria-label="Gráfica de sólidos disueltos"></canvas>
+    </section>
+
+    <section class="card">
+      <h2>Historial de turbidez relativa (%)</h2>
+      <canvas id="grafica-turbidez" aria-label="Gráfica de turbidez"></canvas>
+    </section>
+
+    <section class="card">
+      <h2>Configuración del reloj</h2>
+      <p>Ajusta la fecha y hora simuladas:</p>
+      <form id="form-reloj">
+        <input id="fecha" type="datetime-local" required>
+        <button type="submit">Guardar fecha y hora</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Demostración</h2>
+      <p>El sistema comienza en estado normal. Usa el botón para probar cómo se vería una alerta.</p>
+      <button id="boton-alerta" type="button">Simular alerta</button>
+      <button id="boton-csv" class="boton-secundario" type="button">Descargar CSV</button>
+      <p class="nota">Las lecturas de esta página son ficticias y solo sirven para mostrar la interfaz.</p>
+    </section>
+  </main>
+
+  <script>
+    const LIMITE_TEMP = 30;
+    const LIMITE_TDS = 500;
+    const LIMITE_TURBIDEZ = 50;
+
+    const historial = [];
+    let simularAlerta = false;
+    let desplazamientoRelojMs = 0;
+
+    function fechaHoraActual() {
+      return new Date(Date.now() + desplazamientoRelojMs);
+    }
+
+    function formatoFecha(fecha) {
+      const dos = numero => String(numero).padStart(2, "0");
+      return `${dos(fecha.getDate())}-${dos(fecha.getMonth() + 1)}-${fecha.getFullYear()} ` +
+        `${dos(fecha.getHours())}:${dos(fecha.getMinutes())}:${dos(fecha.getSeconds())}`;
+    }
+
+    function agregarMedicion() {
+      const variacion = () => (Math.random() - 0.5) * 0.6;
+
+      const medicion = {
+        fecha: fechaHoraActual(),
+        temperatura: simularAlerta ? 33 + variacion() : 24 + variacion(),
+        ppm: simularAlerta ? 540 + variacion() * 10 : 320 + variacion() * 10,
+        turbidez: simularAlerta ? 57 + variacion() : 22 + variacion()
+      };
+
+      historial.push(medicion);
+      if (historial.length > 30) historial.shift();
+
+      mostrarMedicion(medicion);
+      dibujarGraficas();
+    }
+
+    function mostrarMedicion(m) {
+      const alertaTemp = m.temperatura > LIMITE_TEMP;
+      const alertaTds = m.ppm > LIMITE_TDS;
+      const alertaTurbidez = m.turbidez > LIMITE_TURBIDEZ;
+      const hayAlerta = alertaTemp || alertaTds || alertaTurbidez;
+
+      document.getElementById("valor-temp").textContent =
+        `${m.temperatura.toFixed(2)} °C`;
+      document.getElementById("valor-tds").textContent =
+        `${m.ppm.toFixed(1)} ppm`;
+      document.getElementById("valor-turbidez").textContent =
+        `${m.turbidez.toFixed(1)} %`;
+
+      document.getElementById("tarjeta-temp").classList.toggle("superado", alertaTemp);
+      document.getElementById("tarjeta-tds").classList.toggle("superado", alertaTds);
+      document.getElementById("tarjeta-turbidez").classList.toggle("superado", alertaTurbidez);
+
+      const caja = document.getElementById("alerta");
+      caja.className = `alerta ${hayAlerta ? "roja" : "normal"}`;
+      caja.textContent = hayAlerta
+        ? "ALERTA: Se superó uno o más umbrales configurados."
+        : "No se han encontrado parámetros problemáticos según los umbrales configurados.";
+
+      document.getElementById("estado").textContent =
+        `Fecha y hora: ${formatoFecha(m.fecha)}\n` +
+        "Reloj interno: Operativo\n" +
+        "microSD: Activa";
+    }
+
+    function dibujarGrafica(id, clave, color, unidad, minimoFijo = null, maximoFijo = null) {
+      const canvas = document.getElementById(id);
+      const ctx = canvas.getContext("2d");
+      const escala = window.devicePixelRatio || 1;
+      const ancho = canvas.clientWidth;
+      const alto = 260;
+
+      canvas.width = Math.max(1, Math.floor(ancho * escala));
+      canvas.height = Math.floor(alto * escala);
+      ctx.setTransform(escala, 0, 0, escala, 0, 0);
+      ctx.clearRect(0, 0, ancho, alto);
+
+      const x0 = 62, x1 = ancho - 12, y0 = 14, y1 = alto - 42;
+      const graficaAncho = x1 - x0;
+      const graficaAlto = y1 - y0;
+      if (graficaAncho <= 0 || graficaAlto <= 0) return;
+
+      const valores = historial.map(m => m[clave]);
+      let minimo = minimoFijo ?? (valores.length ? Math.min(...valores) : 0);
+      let maximo = maximoFijo ?? (valores.length ? Math.max(...valores) : 1);
+
+      if (minimoFijo === null && valores.length) {
+        const margen = maximo === minimo ? 1 : (maximo - minimo) * 0.2;
+        minimo -= margen;
+        maximo += margen;
+      }
+
+      ctx.font = "11px Arial";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+
+      for (let i = 0; i <= 4; i++) {
+        const y = y0 + i / 4 * graficaAlto;
+        const valor = maximo - i / 4 * (maximo - minimo);
+
+        ctx.strokeStyle = "#e2ebef";
+        ctx.beginPath();
+        ctx.moveTo(x0, y);
+        ctx.lineTo(x1, y);
+        ctx.stroke();
+
+        ctx.fillStyle = "#526b78";
+        ctx.fillText(`${valor.toFixed(1)}${unidad}`, x0 - 7, y);
+      }
+
+      ctx.strokeStyle = "#8da4af";
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x0, y1);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+
+      if (valores.length === 0) return;
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "#526b78";
+
+      const cantidadMarcas = Math.min(5, valores.length);
+      for (let i = 0; i < cantidadMarcas; i++) {
+        const indice = cantidadMarcas === 1
+          ? 0
+          : Math.round(i * (valores.length - 1) / (cantidadMarcas - 1));
+        const x = x0 + indice * graficaAncho / Math.max(1, valores.length - 1);
+        const hora = historial[indice].fecha.toLocaleTimeString();
+
+        ctx.fillText(hora, x, y1 + 7);
+      }
+
+      if (valores.length < 2) return;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+
+      valores.forEach((valor, i) => {
+        const x = x0 + i * graficaAncho / (valores.length - 1);
+        const y = y0 + (maximo - valor) * graficaAlto / (maximo - minimo);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+
+      ctx.stroke();
+    }
+
+    function dibujarGraficas() {
+      dibujarGrafica("grafica-temp", "temperatura", "#e87519", "°C");
+      dibujarGrafica("grafica-tds", "ppm", "#2374ab", " ppm");
+      dibujarGrafica("grafica-turbidez", "turbidez", "#0ea5a4", "%", 0, 100);
+    }
+
+    document.getElementById("boton-alerta").addEventListener("click", event => {
+      simularAlerta = !simularAlerta;
+      event.target.textContent = simularAlerta ? "Volver al estado normal" : "Simular alerta";
+      agregarMedicion();
+    });
+
+    document.getElementById("form-reloj").addEventListener("submit", event => {
+      event.preventDefault();
+
+      const valor = document.getElementById("fecha").value;
+      if (!valor) return;
+
+      desplazamientoRelojMs = new Date(valor).getTime() - Date.now();
+      agregarMedicion();
+    });
+
+    document.getElementById("boton-csv").addEventListener("click", () => {
+      const filas = [
+        "fecha_hora,temperatura_C,TDS_ppm,turbidez_relativa_pct",
+        ...historial.map(m =>
+          `${formatoFecha(m.fecha)},${m.temperatura.toFixed(2)},` +
+          `${m.ppm.toFixed(1)},${m.turbidez.toFixed(1)}`
+        )
+      ];
+
+      const archivo = new Blob([filas.join("\n")], { type: "text/csv;charset=utf-8" });
+      const enlace = document.createElement("a");
+      enlace.href = URL.createObjectURL(archivo);
+      enlace.download = "mediciones_demo.csv";
+      enlace.click();
+      URL.revokeObjectURL(enlace.href);
+    });
+
+    window.addEventListener("resize", dibujarGraficas);
+
+    // Genera puntos iniciales para que las gráficas aparezcan pobladas.
+    for (let i = 0; i < 12; i++) {
+      const minutosAtras = (11 - i) * 5;
+      const m = new Date(Date.now() - minutosAtras * 60 * 1000);
+      historial.push({
+        fecha: m,
+        temperatura: 24 + (Math.random() - 0.5) * 0.6,
+        ppm: 320 + (Math.random() - 0.5) * 10,
+        turbidez: 22 + (Math.random() - 0.5) * 0.6
+      });
+    }
+
+    agregarMedicion();
+    setInterval(agregarMedicion, 5000);
+  </script>
+</body>
+</html>
